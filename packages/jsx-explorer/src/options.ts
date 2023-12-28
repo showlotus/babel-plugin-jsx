@@ -8,83 +8,115 @@ export const compilerOptions: VueJSXPluginOptions = reactive({
   optimize: false,
   transformOn: false,
   enableObjectSlots: true,
+  isTSX: true,
+  librarySource: 'vue',
+  reactiveWrapRoot: true,
+  customKey: 'ONE_JSX_LOADER',
 });
 
 const App = {
   setup() {
     return () => [
-      h('h1', 'Vue 3 JSX Explorer'),
       h(
-        'a',
+        'h1',
         {
-          href: 'https://app.netlify.com/sites/vue-jsx-explorer/deploys',
-          target: '_blank',
+          style: {
+            cursor: 'pointer',
+            userSelect: 'none',
+          },
+          onClick() {
+            window.open(
+              'https://showlotus.github.io/babel-plugin-jsx/packages/jsx-explorer/dist'
+            );
+          },
         },
-        'History'
+        'one-jsx-loader'
       ),
 
       h('div', { id: 'options-wrapper' }, [
         h('div', { id: 'options-label' }, 'Options ↘'),
         h('ul', { id: 'options' }, [
-          // mergeProps
+          // isTSX
           h('li', [
             h('input', {
               type: 'checkbox',
-              id: 'mergeProps',
-              name: 'mergeProps',
-              checked: compilerOptions.mergeProps,
+              id: 'isTSX',
+              checked: compilerOptions.isTSX,
               onChange(e: Event) {
-                compilerOptions.mergeProps = (
-                  e.target as HTMLInputElement
-                ).checked;
+                compilerOptions.isTSX = (e.target as HTMLInputElement).checked;
               },
             }),
-            h('label', { for: 'mergeProps' }, 'mergeProps'),
+            h('label', { for: 'isTSX' }, 'isTSX'),
           ]),
 
-          // optimize
+          // reactiveWrapRoot
           h('li', [
             h('input', {
               type: 'checkbox',
-              id: 'optimize',
-              checked: compilerOptions.optimize,
+              id: 'reactiveWrapRoot',
+              checked: compilerOptions.reactiveWrapRoot,
               onChange(e: Event) {
-                compilerOptions.optimize = (
+                compilerOptions.reactiveWrapRoot = (
                   e.target as HTMLInputElement
                 ).checked;
               },
             }),
-            h('label', { for: 'optimize' }, 'optimize'),
+            h('label', { for: 'reactiveWrapRoot' }, 'reactiveWrapRoot'),
           ]),
 
-          // transformOn
+          // select library source
           h('li', [
             h('input', {
               type: 'checkbox',
-              id: 'transformOn',
-              checked: compilerOptions.transformOn,
-              onChange(e: Event) {
-                compilerOptions.transformOn = (
-                  e.target as HTMLInputElement
-                ).checked;
-              },
+              disabled: true,
+              checked: true,
             }),
-            h('label', { for: 'transformOn' }, 'transformOn'),
+            h('label', { for: 'librarySource' }, 'librarySource：'),
+            h(
+              'select',
+              {
+                type: 'select',
+                id: 'librarySource',
+                checked: true,
+                onChange(e: Event) {
+                  compilerOptions.librarySource = (
+                    e.target as HTMLInputElement
+                  ).value;
+                },
+              },
+              [
+                h('option', { value: 'vue' }, 'vue'),
+                h('option', { value: 'vue-demi' }, 'vue-demi'),
+                h(
+                  'option',
+                  { value: '@vue/composition-api' },
+                  '@vue/composition-api'
+                ),
+              ]
+            ),
           ]),
 
-          // enableObjectSlots
+          // custom key
           h('li', [
             h('input', {
               type: 'checkbox',
-              id: 'enableObjectSlots',
-              checked: compilerOptions.enableObjectSlots,
+              disabled: true,
+              checked: true,
+            }),
+            h('label', { for: 'customKey' }, 'customKey：'),
+            h('input', {
+              type: 'text',
+              id: 'customKey',
+              style: {
+                width: '200px',
+              },
+              value: compilerOptions.customKey,
               onChange(e: Event) {
-                compilerOptions.enableObjectSlots = (
+                compilerOptions.customKey = (
                   e.target as HTMLInputElement
-                ).checked;
+                ).value;
               },
             }),
-            h('label', { for: 'enableObjectSlots' }, 'enableObjectSlots'),
           ]),
         ]),
       ]),

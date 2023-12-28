@@ -1,32 +1,19 @@
 import * as t from '@babel/types';
 import { type NodePath, type Visitor } from '@babel/traverse';
-// @ts-expect-error
-import { addDefault } from '@babel/helper-module-imports';
 import {
-  buildIIFE,
   checkIsComponent,
   createIdentifier,
-  dedupeProperties,
   getJSXAttributeName,
   getTag,
-  isConstant,
-  isDirective,
   isOn,
   transformJSXExpressionContainer,
-  transformJSXSpreadAttribute,
   transformJSXSpreadChild,
   transformJSXText,
   transformText,
   walksScope,
 } from './utils';
 import SlotFlags from './slotFlags';
-import { PatchFlags } from './patchFlags';
-import parseDirectives from './parseDirectives';
-import type { Slots, State } from './interface';
-
-const xlinkRE = /^xlink([A-Z])/;
-
-type ExcludesBoolean = <T>(x: T | false | true) => x is T;
+import type { State } from './interface';
 
 const getJSXAttributeValue = (
   path: NodePath<t.JSXAttribute>,
@@ -48,290 +35,31 @@ const getJSXAttributeValue = (
 
 const buildProps = (path: NodePath<t.JSXElement>, state: State) => {
   const tag = getTag(path, state);
-  const isComponent = checkIsComponent(path.get('openingElement'), state);
   const props = path.get('openingElement').get('attributes');
-  const directives: t.ArrayExpression[] = [];
-  const dynamicPropNames = new Set<string>();
-
-  let slots: Slots = null;
-  let patchFlag = 0;
-
   if (props.length === 0) {
     return {
       tag,
-      isComponent,
-      slots,
-      props: t.nullLiteral(),
-      directives,
-      patchFlag,
-      dynamicPropNames,
+      props: t.objectExpression([]),
     };
   }
 
-  let properties: t.ObjectProperty[] = [];
-
-  // patchFlag analysis
-  let hasRef = false;
-  let hasClassBinding = false;
-  let hasStyleBinding = false;
-  let hasHydrationEventBinding = false;
-  let hasDynamicKeys = false;
-
-  const mergeArgs: (t.CallExpression | t.ObjectExpression | t.Identifier)[] =
-    [];
-  const { mergeProps = true } = state.opts;
+  const properties: t.ObjectProperty[] = [];
   props.forEach((prop) => {
     if (prop.isJSXAttribute()) {
-      let name = getJSXAttributeName(prop);
-
+      const name = getJSXAttributeName(prop);
       const attributeValue = getJSXAttributeValue(prop, state);
-
-      if (!isConstant(attributeValue) || name === 'ref') {
-        if (
-          !isComponent &&
-          isOn(name) &&
-          // omit the flag for click handlers becaues hydration gives click
-          // dedicated fast path.
-          name.toLowerCase() !== 'onclick' &&
-          // omit v-model handlers
-          name !== 'onUpdate:modelValue'
-        ) {
-          hasHydrationEventBinding = true;
-        }
-
-        if (name === 'ref') {
-          hasRef = true;
-        } else if (name === 'class' && !isComponent) {
-          hasClassBinding = true;
-        } else if (name === 'style' && !isComponent) {
-          hasStyleBinding = true;
-        } else if (name !== 'key' && !isDirective(name) && name !== 'on') {
-          dynamicPropNames.add(name);
-        }
-      }
-      if (state.opts.transformOn && (name === 'on' || name === 'nativeOn')) {
-        if (!state.get('transformOn')) {
-          state.set(
-            'transformOn',
-            addDefault(path, '@vue/babel-helper-vue-transform-on', {
-              nameHint: '_transformOn',
-            })
-          );
-        }
-        mergeArgs.push(
-          t.callExpression(state.get('transformOn'), [
-            attributeValue || t.booleanLiteral(true),
-          ])
-        );
-        return;
-      }
-      if (isDirective(name)) {
-        const { directive, modifiers, values, args, directiveName } =
-          parseDirectives({
-            tag,
-            isComponent,
-            name,
-            path: prop,
-            state,
-            value: attributeValue,
-          });
-
-        if (directiveName === 'slots') {
-          slots = attributeValue as Slots;
-          return;
-        }
-        if (directive) {
-          directives.push(t.arrayExpression(directive));
-        } else if (directiveName === 'html') {
-          properties.push(
-            t.objectProperty(t.stringLiteral('innerHTML'), values[0] as any)
-          );
-          dynamicPropNames.add('innerHTML');
-        } else if (directiveName === 'text') {
-          properties.push(
-            t.objectProperty(t.stringLiteral('textContent'), values[0] as any)
-          );
-          dynamicPropNames.add('textContent');
-        }
-
-        if (['models', 'model'].includes(directiveName)) {
-          values.forEach((value, index) => {
-            const propName = args[index];
-            // v-model target with variable
-            const isDynamic =
-              propName &&
-              !t.isStringLiteral(propName) &&
-              !t.isNullLiteral(propName);
-
-            // must be v-model or v-models and is a component
-            if (!directive) {
-              properties.push(
-                t.objectProperty(
-                  t.isNullLiteral(propName)
-                    ? t.stringLiteral('modelValue')
-                    : propName,
-                  value as any,
-                  isDynamic
-                )
-              );
-              if (!isDynamic) {
-                dynamicPropNames.add(
-                  (propName as t.StringLiteral)?.value || 'modelValue'
-                );
-              }
-
-              if (modifiers[index]?.size) {
-                properties.push(
-                  t.objectProperty(
-                    isDynamic
-                      ? t.binaryExpression(
-                          '+',
-                          propName,
-                          t.stringLiteral('Modifiers')
-                        )
-                      : t.stringLiteral(
-                          `${
-                            (propName as t.StringLiteral)?.value || 'model'
-                          }Modifiers`
-                        ),
-                    t.objectExpression(
-                      [...modifiers[index]].map((modifier) =>
-                        t.objectProperty(
-                          t.stringLiteral(modifier),
-                          t.booleanLiteral(true)
-                        )
-                      )
-                    ),
-                    isDynamic
-                  )
-                );
-              }
-            }
-
-            const updateName = isDynamic
-              ? t.binaryExpression('+', t.stringLiteral('onUpdate'), propName)
-              : t.stringLiteral(
-                  `onUpdate:${
-                    (propName as t.StringLiteral)?.value || 'modelValue'
-                  }`
-                );
-
-            properties.push(
-              t.objectProperty(
-                updateName,
-                t.arrowFunctionExpression(
-                  [t.identifier('$event')],
-                  t.assignmentExpression(
-                    '=',
-                    value as any,
-                    t.identifier('$event')
-                  )
-                ),
-                isDynamic
-              )
-            );
-
-            if (!isDynamic) {
-              dynamicPropNames.add((updateName as t.StringLiteral).value);
-            } else {
-              hasDynamicKeys = true;
-            }
-          });
-        }
-      } else {
-        if (name.match(xlinkRE)) {
-          name = name.replace(
-            xlinkRE,
-            (_, firstCharacter) => `xlink:${firstCharacter.toLowerCase()}`
-          );
-        }
-        properties.push(
-          t.objectProperty(
-            t.stringLiteral(name),
-            attributeValue || t.booleanLiteral(true)
-          )
-        );
-      }
-    } else {
-      if (properties.length && mergeProps) {
-        mergeArgs.push(
-          t.objectExpression(dedupeProperties(properties, mergeProps))
-        );
-        properties = [];
-      }
-
-      // JSXSpreadAttribute
-      hasDynamicKeys = true;
-      transformJSXSpreadAttribute(
-        path as NodePath,
-        prop as NodePath<t.JSXSpreadAttribute>,
-        mergeProps,
-        mergeProps ? mergeArgs : properties
+      properties.push(
+        t.objectProperty(
+          t.stringLiteral(name),
+          attributeValue || t.booleanLiteral(true)
+        )
       );
     }
   });
 
-  // patchFlag analysis
-  if (hasDynamicKeys) {
-    patchFlag |= PatchFlags.FULL_PROPS;
-  } else {
-    if (hasClassBinding) {
-      patchFlag |= PatchFlags.CLASS;
-    }
-    if (hasStyleBinding) {
-      patchFlag |= PatchFlags.STYLE;
-    }
-    if (dynamicPropNames.size) {
-      patchFlag |= PatchFlags.PROPS;
-    }
-    if (hasHydrationEventBinding) {
-      patchFlag |= PatchFlags.HYDRATE_EVENTS;
-    }
-  }
-
-  if (
-    (patchFlag === 0 || patchFlag === PatchFlags.HYDRATE_EVENTS) &&
-    (hasRef || directives.length > 0)
-  ) {
-    patchFlag |= PatchFlags.NEED_PATCH;
-  }
-
-  let propsExpression: t.Expression | t.ObjectProperty | t.Literal =
-    t.nullLiteral();
-  if (mergeArgs.length) {
-    if (properties.length) {
-      mergeArgs.push(
-        t.objectExpression(dedupeProperties(properties, mergeProps))
-      );
-    }
-    if (mergeArgs.length > 1) {
-      propsExpression = t.callExpression(
-        createIdentifier(state, 'mergeProps'),
-        mergeArgs
-      );
-    } else {
-      // single no need for a mergeProps call
-      propsExpression = mergeArgs[0];
-    }
-  } else if (properties.length) {
-    // single no need for spread
-    if (properties.length === 1 && t.isSpreadElement(properties[0])) {
-      propsExpression = (properties[0] as unknown as t.SpreadElement).argument;
-    } else {
-      propsExpression = t.objectExpression(
-        dedupeProperties(properties, mergeProps)
-      );
-    }
-  }
-
   return {
     tag,
-    props: propsExpression,
-    isComponent,
-    slots,
-    directives,
-    patchFlag,
-    dynamicPropNames,
+    props: t.objectExpression(properties),
   };
 };
 
@@ -361,6 +89,9 @@ const getChildren = (
         }
         return transformedText;
       }
+      if (path.isObjectExpression()) {
+        return (path as NodePath<t.ObjectExpression>).node;
+      }
       if (path.isJSXExpressionContainer()) {
         const expression = transformJSXExpressionContainer(path);
 
@@ -389,180 +120,225 @@ const getChildren = (
       ((value: any) => value != null && !t.isJSXEmptyExpression(value)) as any
     );
 
+const genProps = (props: t.ObjectExpression) => {
+  const result = [] as t.ObjectProperty[];
+  const events = [] as t.ObjectProperty[];
+  const newProps = [] as (
+    | t.ObjectProperty
+    | t.ObjectMethod
+    | t.SpreadElement
+  )[];
+  props.properties.forEach((prop) => {
+    if (t.isObjectProperty(prop)) {
+      const name = (prop.key as t.StringLiteral).value;
+      if (['use', 'ref', 'resolve'].includes(name)) {
+        result.push(t.objectProperty(t.identifier(name), prop.value));
+        return;
+      } else if (isOn(name)) {
+        events.push(
+          t.objectProperty(
+            t.identifier(
+              name.slice(2).replace(/^[^\s]/, (str) => str.toLowerCase())
+            ),
+            prop.value
+          )
+        );
+        return;
+      } else if (name === 'slot') {
+        return;
+      }
+    }
+    newProps.push(prop);
+  });
+
+  if (events.length) {
+    result.push(
+      t.objectProperty(t.identifier('events'), t.objectExpression(events))
+    );
+  }
+
+  if (newProps.length) {
+    result.push(
+      t.objectProperty(t.identifier('props'), t.objectExpression(newProps))
+    );
+  }
+
+  return result;
+};
+
+const genComponent = (component: t.StringLiteral) => {
+  return t.objectProperty(t.identifier('component'), component);
+};
+
+const genKey = (() => {
+  let idx = 0;
+  const generateKey = (prefix: string) => {
+    return `${prefix}_${idx++}`;
+  };
+  return (path: NodePath<t.JSXElement>, state: State) => {
+    const { customKey = 'ONE_JSX_LOADER' } = state.opts;
+    return t.objectProperty(
+      t.identifier('key'),
+      t.stringLiteral(
+        typeof customKey === 'string' ? generateKey(customKey) : customKey()
+      )
+    );
+  };
+})();
+
+const isNamedSlot = (slot: t.Expression) => {
+  if (!t.isObjectExpression(slot)) {
+    return '';
+  }
+
+  const properties = (slot as t.ObjectExpression).properties;
+  const componentPropertyIdx = properties.findIndex((item) => {
+    if (t.isObjectProperty(item)) {
+      return (
+        (item.key as t.Identifier).name === 'component' &&
+        (item.value as t.StringLiteral).value.startsWith('template:')
+      );
+    }
+  });
+  if (componentPropertyIdx > -1) {
+    const componentProperty = properties[
+      componentPropertyIdx
+    ] as t.ObjectProperty;
+    const oldVal = (componentProperty.value as t.StringLiteral).value;
+    const slotName = oldVal.split(':')[1];
+    (componentProperty.value as t.StringLiteral).value = 'template';
+    properties.splice(componentPropertyIdx, 1);
+    return slotName;
+  }
+  return '';
+};
+
+const genSlots = (slots: t.Expression[]) => {
+  const defaultSlots = [] as t.Expression[];
+  const namedSlots = {} as any;
+  const dialogSlots = [] as t.Expression[];
+  slots.forEach((slot) => {
+    const properties = (slot as t.ObjectExpression).properties;
+    const slotName = isNamedSlot(slot);
+    if (slotName) {
+      namedSlots[slotName] = slot;
+    } else if (properties) {
+      const componentPropertyIdx = properties.findIndex((item) => {
+        if (t.isObjectProperty(item)) {
+          return (
+            (item.key as t.Identifier).name === 'component' &&
+            (item.value as t.StringLiteral).value === 'Modal'
+          );
+        }
+      });
+      if (componentPropertyIdx > -1) {
+        properties.splice(componentPropertyIdx, 1);
+        dialogSlots.push(slot);
+      } else {
+        defaultSlots.push(slot);
+      }
+    } else {
+      defaultSlots.push(slot);
+    }
+  });
+
+  return t.objectProperty(
+    t.identifier('slots'),
+    t.objectExpression(
+      [
+        !namedSlots.default &&
+          t.objectProperty(
+            t.identifier('default'),
+            defaultSlots.length <= 1
+              ? defaultSlots?.[0] || t.objectExpression([])
+              : t.arrayExpression(defaultSlots)
+          ),
+        ...Object.keys(namedSlots).map((key) => {
+          return t.objectProperty(t.identifier(key), namedSlots[key]);
+        }),
+        dialogSlots.length &&
+          t.objectProperty(
+            t.identifier('dialog'),
+            dialogSlots.length <= 1
+              ? dialogSlots?.[0] || t.objectExpression([])
+              : t.arrayExpression(dialogSlots)
+          ),
+      ].filter(Boolean) as t.ObjectProperty[]
+    )
+  );
+};
+
+const isTemplate = (tag: t.StringLiteral) => {
+  return tag.value === 'template';
+};
+
+const hasSlot = (path: NodePath<t.JSXElement>, state: State) => {
+  const attributes = path.get('openingElement').get('attributes');
+  for (const attribute of attributes) {
+    if (attribute.isJSXAttribute()) {
+      const name = getJSXAttributeName(attribute);
+      const value = getJSXAttributeValue(attribute, state);
+      if (name === 'slot' && t.isStringLiteral(value) && value.value) {
+        const slotName = value.value;
+        return slotName;
+      }
+    }
+  }
+  return '';
+};
+
 const transformJSXElement = (
   path: NodePath<t.JSXElement>,
   state: State
-): t.CallExpression => {
+): t.CallExpression | t.ObjectExpression => {
   const children = getChildren(path.get('children'), state);
-  const {
-    tag,
-    props,
-    isComponent,
-    directives,
-    patchFlag,
-    dynamicPropNames,
-    slots,
-  } = buildProps(path, state);
+  const { tag, props } = buildProps(path, state);
 
-  const { optimize = false } = state.opts;
-
-  const slotFlag = path.getData('slotFlag') || SlotFlags.STABLE;
-  let VNodeChild;
-
-  if (children.length > 1 || slots) {
-    /*
-      <A v-slots={slots}>{a}{b}</A>
-        ---> {{ default: () => [a, b], ...slots }}
-        ---> {[a, b]}
-    */
-    VNodeChild = isComponent
-      ? children.length
-        ? t.objectExpression(
-            [
-              !!children.length &&
-                t.objectProperty(
-                  t.identifier('default'),
-                  t.arrowFunctionExpression(
-                    [],
-                    t.arrayExpression(buildIIFE(path, children))
-                  )
-                ),
-              ...(slots
-                ? t.isObjectExpression(slots)
-                  ? (slots! as t.ObjectExpression).properties
-                  : [t.spreadElement(slots!)]
-                : []),
-              optimize &&
-                t.objectProperty(t.identifier('_'), t.numericLiteral(slotFlag)),
-            ].filter(Boolean as any)
-          )
-        : slots
-      : t.arrayExpression(children);
-  } else if (children.length === 1) {
-    /*
-      <A>{a}</A> or <A>{() => a}</A>
-     */
-    const { enableObjectSlots = true } = state.opts;
-    const child = children[0];
-    const objectExpression = t.objectExpression(
-      [
-        t.objectProperty(
-          t.identifier('default'),
-          t.arrowFunctionExpression(
-            [],
-            t.arrayExpression(buildIIFE(path, [child]))
-          )
-        ),
-        optimize &&
-          (t.objectProperty(
-            t.identifier('_'),
-            t.numericLiteral(slotFlag)
-          ) as any),
-      ].filter(Boolean)
-    );
-    if (t.isIdentifier(child) && isComponent) {
-      VNodeChild = enableObjectSlots
-        ? t.conditionalExpression(
-            t.callExpression(
-              state.get('@vue/babel-plugin-jsx/runtimeIsSlot')(),
-              [child]
-            ),
-            child,
-            objectExpression
-          )
-        : objectExpression;
-    } else if (t.isCallExpression(child) && child.loc && isComponent) {
-      // the element was generated and doesn't have location information
-      if (enableObjectSlots) {
-        const { scope } = path;
-        const slotId = scope.generateUidIdentifier('slot');
-        if (scope) {
-          scope.push({
-            id: slotId,
-            kind: 'let',
-          });
-        }
-        const alternate = t.objectExpression(
-          [
-            t.objectProperty(
-              t.identifier('default'),
-              t.arrowFunctionExpression(
-                [],
-                t.arrayExpression(buildIIFE(path, [slotId]))
-              )
-            ),
-            optimize &&
-              (t.objectProperty(
-                t.identifier('_'),
-                t.numericLiteral(slotFlag)
-              ) as any),
-          ].filter(Boolean)
-        );
-        const assignment = t.assignmentExpression('=', slotId, child);
-        const condition = t.callExpression(
-          state.get('@vue/babel-plugin-jsx/runtimeIsSlot')(),
-          [assignment]
-        );
-        VNodeChild = t.conditionalExpression(condition, slotId, alternate);
-      } else {
-        VNodeChild = objectExpression;
-      }
-    } else if (
-      t.isFunctionExpression(child) ||
-      t.isArrowFunctionExpression(child)
-    ) {
-      VNodeChild = t.objectExpression([
-        t.objectProperty(t.identifier('default'), child),
-      ]);
-    } else if (t.isObjectExpression(child)) {
-      VNodeChild = t.objectExpression(
-        [
-          ...child.properties,
-          optimize &&
-            t.objectProperty(t.identifier('_'), t.numericLiteral(slotFlag)),
-        ].filter(Boolean as any)
-      );
-    } else {
-      VNodeChild = isComponent
-        ? t.objectExpression([
-            t.objectProperty(
-              t.identifier('default'),
-              t.arrowFunctionExpression([], t.arrayExpression([child]))
-            ),
-          ])
-        : t.arrayExpression([child]);
-    }
+  const slotName = hasSlot(path, state);
+  if (isTemplate(tag as t.StringLiteral) && slotName) {
+    (tag as t.StringLiteral).value += `:${slotName}`;
   }
 
-  const createVNode = t.callExpression(
-    createIdentifier(state, 'createVNode'),
-    [
-      tag,
-      props,
-      VNodeChild || t.nullLiteral(),
-      !!patchFlag && optimize && t.numericLiteral(patchFlag),
-      !!dynamicPropNames.size &&
-        optimize &&
-        t.arrayExpression(
-          [...dynamicPropNames.keys()].map((name) => t.stringLiteral(name))
-        ),
-    ].filter(Boolean as unknown as ExcludesBoolean)
-  );
-
-  if (!directives.length) {
-    return createVNode;
-  }
-
-  return t.callExpression(createIdentifier(state, 'withDirectives'), [
-    createVNode,
-    t.arrayExpression(directives),
+  return t.objectExpression([
+    genKey(path, state),
+    genComponent(tag as t.StringLiteral),
+    ...genProps(props as t.ObjectExpression),
+    genSlots(children),
   ]);
 };
 
 const visitor: Visitor<State> = {
+  'JSXFragment|JSXText': {
+    enter(path) {
+      path.remove();
+    },
+  },
   JSXElement: {
     exit(path, state) {
-      path.replaceWith(transformJSXElement(path, state));
+      // 移除所有非组件节点
+      const tag = getTag(path, state);
+      const isComponent = checkIsComponent(path.get('openingElement'), state);
+      if (!isComponent) {
+        path.remove();
+        return;
+      }
+
+      // 移除无效的插槽节点
+      if (isTemplate(tag as t.StringLiteral) && !hasSlot(path, state)) {
+        path.remove();
+        return;
+      }
+
+      const parent = path.findParent((parentPath) => parentPath.isJSXElement());
+      const { reactiveWrapRoot } = state.opts;
+      // 在最外层的根节点外包裹一层 reactive
+      const nodes =
+        !parent && reactiveWrapRoot
+          ? t.callExpression(createIdentifier(state, 'reactive'), [
+              transformJSXElement(path, state),
+            ])
+          : transformJSXElement(path, state);
+      path.replaceWith(nodes);
     },
   },
 };

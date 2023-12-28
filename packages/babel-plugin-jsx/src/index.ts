@@ -36,7 +36,7 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
   inherits: syntaxJsx,
   visitor: {
     ...transformVueJSX,
-    ...sugarFragment,
+    // ...sugarFragment,
     Program: {
       enter(path, state) {
         if (hasJSX(path)) {
@@ -56,23 +56,29 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
             'mergeProps',
             'createTextVNode',
             'isVNode',
+            'reactive',
           ];
           if (isModule(path)) {
+            // TAG 当前文件中包含 jsx 语法时，走进这个 if
             // import { createVNode } from "vue";
             const importMap: Record<string, t.Identifier> = {};
+            const { librarySource } = state.opts;
             importNames.forEach((name) => {
               state.set(name, () => {
                 if (importMap[name]) {
                   return types.cloneNode(importMap[name]);
                 }
-                const identifier = addNamed(path, name, 'vue', {
+                const identifier = addNamed(path, name, librarySource, {
                   ensureLiveReference: true,
                 });
+                console.log(name, identifier);
                 importMap[name] = identifier;
                 return identifier;
               });
             });
-            const { enableObjectSlots = true } = state.opts;
+            return; // DONE
+            const { enableObjectSlots = false } = state.opts;
+            console.log(enableObjectSlots, 'enableObjectSlots');
             if (enableObjectSlots) {
               state.set('@vue/babel-plugin-jsx/runtimeIsSlot', () => {
                 if (importMap.runtimeIsSlot) {
@@ -83,10 +89,11 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
                 )() as t.Identifier;
                 const isSlot = path.scope.generateUidIdentifier('isSlot');
                 const ast = template.ast`
-                  function ${isSlot.name}(s) {
-                    return typeof s === 'function' || (Object.prototype.toString.call(s) === '[object Object]' && !${isVNodeName}(s));
-                  }
-                `;
+                    function ${isSlot.name}(s) {
+                      return typeof s === 'function' || (Object.prototype.toString.call(s) === '[object Object]' && !${isVNodeName}(s));
+                    }
+                  `;
+                console.log(isSlot);
                 const lastImport = (path.get('body') as NodePath[])
                   .filter((p) => p.isImportDeclaration())
                   .pop();
@@ -110,9 +117,7 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
                 return t.memberExpression(sourceName, t.identifier(name));
               });
             });
-
             const helpers: Record<string, t.Identifier> = {};
-
             const { enableObjectSlots = true } = state.opts;
             if (enableObjectSlots) {
               state.set('@vue/babel-plugin-jsx/runtimeIsSlot', () => {
@@ -130,7 +135,6 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
                     }.isVNode(s));
                   }
                 `;
-
                 const nodePaths = path.get('body') as NodePath[];
                 const lastImport = nodePaths
                   .filter(
@@ -148,16 +152,14 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
               });
             }
           }
-
           const {
             opts: { pragma = '' },
             file,
           } = state;
-
           if (pragma) {
             state.set('createVNode', () => t.identifier(pragma));
           }
-
+          // USELESS 针对 @jsx 多行注释将 _createVNode 替换成 *
           if (file.ast.comments) {
             for (const comment of file.ast.comments) {
               const jsxMatches = JSX_ANNOTATION_REGEX.exec(comment.value);

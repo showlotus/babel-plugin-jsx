@@ -23,4 +23,18 @@ export interface VueJSXPluginOptions {
   enableObjectSlots?: boolean;
   /** Replace the function used when compiling JSX expressions */
   pragma?: string;
+  /** open tsx */
+  isTSX?: boolean;
+  /** some api source */
+  librarySource?: string;
+  /** use reactive wrap the root's outer */
+  reactiveWrapRoot?: boolean;
+  /**
+   * a method of generating key.
+   *
+   * If the type is a string, it will be used as a prefix to the key
+   *
+   * If the type is a function, you should be sure to return a different value each time you call it
+   */
+  customKey?: string | ((...args: any[]) => string);
 }

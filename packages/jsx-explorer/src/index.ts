@@ -1,13 +1,15 @@
 import * as monaco from 'monaco-editor';
 import { watchEffect } from 'vue';
-import { transform } from '@babel/core';
+import { type PluginItem, transform } from '@babel/core';
 import babelPluginJsx from '@vue/babel-plugin-jsx';
+import babelPluginTransfromTs from '@babel/plugin-transform-typescript';
 import {
   type VueJSXPluginOptions,
   compilerOptions,
   initOptions,
 } from './options';
 import './index.css';
+import { templateStr } from './template';
 
 main();
 
@@ -41,13 +43,14 @@ function main() {
     allowNonTsExtensions: true,
     jsx: monaco.languages.typescript.JsxEmit.Preserve,
     target: monaco.languages.typescript.ScriptTarget.Latest,
+    jsxFactory: 'h',
   });
 
   const editor = monaco.editor.create(document.getElementById('source')!, {
     value:
       decodeURIComponent(window.location.hash.slice(1)) ||
       persistedState.src ||
-      'const App = () => <div>Hello World</div>',
+      templateStr,
     language: 'typescript',
     tabSize: 2,
     ...sharedEditorOptions,
@@ -61,7 +64,7 @@ function main() {
     ...sharedEditorOptions,
   });
 
-  const reCompile = () => {
+  const reCompile = async () => {
     const src = editor.getValue();
     const state = JSON.stringify({
       src,
@@ -70,11 +73,18 @@ function main() {
     localStorage.setItem('state', state);
     window.location.hash = encodeURIComponent(src);
     console.clear();
+    const plugins = [
+      [babelPluginJsx, compilerOptions],
+      compilerOptions.isTSX && [
+        babelPluginTransfromTs,
+        { isTSX: true, allExtensions: true },
+      ],
+    ].filter(Boolean) as PluginItem[];
     transform(
       src,
       {
         babelrc: false,
-        plugins: [[babelPluginJsx, compilerOptions]],
+        plugins,
         ast: true,
       },
       (err, result = {}) => {

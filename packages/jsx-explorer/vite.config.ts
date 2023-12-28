@@ -8,6 +8,9 @@ export default defineConfig({
       '@vue/babel-plugin-jsx': '@vue/babel-plugin-jsx/src/index.ts',
     },
   },
+  build: {
+    minify: false,
+  },
   plugins: [
     nodePolyfills({
       globals: {

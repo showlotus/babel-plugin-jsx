@@ -8,7 +8,8 @@
     "lint": "eslint --cache .",
     "format": "prettier --write .",
     "typecheck": "tsc",
-    "release": "bumpp -r"
+    "release": "bumpp -r",
+    "refresh": "rm -rf **/node_modules && pnpm i --offline"
   },
   "license": "MIT",
   "keywords": [
