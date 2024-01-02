@@ -1,31 +1,29 @@
-# Babel Plugin JSX for Vue 3
+# Vue 3 Babel JSX 插件
 
 [![npm package](https://img.shields.io/npm/v/@vue/babel-plugin-jsx.svg?style=flat-square)](https://www.npmjs.com/package/@vue/babel-plugin-jsx)
-[![issues-helper](https://img.shields.io/badge/Issues%20Manage%20By-issues--helper-blueviolet?style=flat-square)](https://github.com/actions-cool/issues-helper)
+[![issues-helper](https://img.shields.io/badge/Issues%20Manage%20By-issues--helper-orange?style=flat-square)](https://github.com/actions-cool/issues-helper)
 
-To add Vue JSX support.
+以 JSX 的方式来编写 Vue 代码
 
-English | [简体中文](/packages/babel-plugin-jsx/README-zh_CN.md)
+## 安装
 
-## Installation
-
-Install the plugin with:
+安装插件
 
 ```bash
 npm install @vue/babel-plugin-jsx -D
 ```
 
-Then add the plugin to your babel config:
+配置 Babel
 
-```json
+```js
 {
   "plugins": ["@vue/babel-plugin-jsx"]
 }
 ```
 
-## Usage
+## 使用
 
-### options
+### 参数
 
 #### transformOn
 
@@ -33,7 +31,7 @@ Type: `boolean`
 
 Default: `false`
 
-transform `on: { click: xx }` to `onClick: xxx`
+把 `on: { click: xx }` 转成 `onClick: xxx`
 
 #### optimize
 
@@ -41,7 +39,7 @@ Type: `boolean`
 
 Default: `false`
 
-enable optimization or not. It's not recommended to enable it If you are not familiar with Vue 3.
+是否开启优化. 如果你对 Vue 3 不太熟悉，不建议打开
 
 #### isCustomElement
 
@@ -49,7 +47,7 @@ Type: `(tag: string) => boolean`
 
 Default: `undefined`
 
-configuring custom elements
+自定义元素
 
 #### mergeProps
 
@@ -57,15 +55,11 @@ Type: `boolean`
 
 Default: `true`
 
-merge static and dynamic class / style attributes / onXXX handlers
+合并 class / style / onXXX handlers
 
 #### enableObjectSlots
 
-Type: `boolean`
-
-Default: `true`
-
-Whether to enable `object slots` (mentioned below the document) syntax". It might be useful in JSX, but it will add a lot of `_isSlot` condition expressions which increase your bundle size. And `v-slots` is still available even if `enableObjectSlots` is turned off.
+使用 `enableObjectSlots` (文档下面会提到)。虽然在 JSX 中比较好使，但是会增加一些 `_isSlot` 的运行时条件判断，这会增加你的项目体积。即使你关闭了 `enableObjectSlots`，`v-slots` 还是可以使用
 
 #### pragma
 
@@ -73,19 +67,19 @@ Type: `string`
 
 Default: `createVNode`
 
-Replace the function used when compiling JSX expressions.
+替换编译 JSX 表达式的时候使用的函数
 
-## Syntax
+## 表达式
 
-### Content
+### 内容
 
-functional component
+函数式组件
 
 ```jsx
-const App = () => <div>Vue 3.0</div>;
+const App = () => <div></div>;
 ```
 
-with render
+在 render 中使用
 
 ```jsx
 const App = {
@@ -130,14 +124,14 @@ const App = () => (
 const App = () => <input type="email" />;
 ```
 
-with a dynamic binding:
+动态绑定:
 
 ```jsx
 const placeholderText = 'email';
 const App = () => <input type="email" placeholder={placeholderText} />;
 ```
 
-### Directives
+### 指令
 
 #### v-show
 
@@ -154,7 +148,7 @@ const App = {
 
 #### v-model
 
-> Note: You should pass the second param as string for using `arg`.
+> 注意：如果想要使用 `arg`, 第二个参数需要为字符串
 
 ```jsx
 <input v-model={val} />
@@ -172,7 +166,7 @@ const App = {
 <A v-model={[val, 'argument', ['modifier']]} />
 ```
 
-Will compile to:
+会编译成：
 
 ```js
 h(A, {
@@ -184,9 +178,9 @@ h(A, {
 });
 ```
 
-#### v-models (Not recommended since v1.1.0)
+#### v-models (从 1.1.0 开始不推荐使用)
 
-> Note: You should pass a Two-dimensional Arrays to v-models.
+> 注意: 你应该传递一个二维数组给 v-models。
 
 ```jsx
 <A v-models={[[foo], [bar, 'bar']]} />
@@ -210,7 +204,7 @@ h(A, {
 />
 ```
 
-Will compile to:
+会编译成：
 
 ```js
 h(A, {
@@ -227,9 +221,9 @@ h(A, {
 });
 ```
 
-#### custom directive
+#### 自定义指令
 
-Recommended when using string arguments
+只有 argument 的时候推荐使用
 
 ```jsx
 const App = {
@@ -249,9 +243,9 @@ const App = {
 };
 ```
 
-### Slot
+### 插槽
 
-> Note: In `jsx`, _`v-slot`_ should be replaced with **`v-slots`**
+> 注意: 在 `jsx` 中，应该使用 **`v-slots`** 代替 _`v-slot`_
 
 ```jsx
 const A = (props, { slots }) => (
@@ -286,7 +280,7 @@ const App = {
   },
 };
 
-// or you can use object slots when `enableObjectSlots` is not false.
+// 或者，当 `enableObjectSlots` 不是 `false` 时，您可以使用对象插槽
 const App = {
   setup() {
     return () => (
@@ -304,7 +298,7 @@ const App = {
 };
 ```
 
-### In TypeScript
+### 在 TypeScript 中使用
 
 `tsconfig.json`:
 
@@ -316,7 +310,7 @@ const App = {
 }
 ```
 
-## Who is using
+## 谁在使用
 
 <table>
   <tbody>
@@ -368,9 +362,9 @@ const App = {
   </tbody>
 </table>
 
-## Compatibility
+## 兼容性
 
-This repo is only compatible with:
+要求：
 
 - **Babel 7+**
 - **Vue 3+**

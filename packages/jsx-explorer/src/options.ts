@@ -30,7 +30,7 @@ const App = {
             );
           },
         },
-        'one-jsx-loader'
+        'babel-plugin-jsx explorer'
       ),
 
       h('div', { id: 'options-wrapper' }, [

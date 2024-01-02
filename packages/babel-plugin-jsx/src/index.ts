@@ -7,7 +7,6 @@ import syntaxJsx from '@babel/plugin-syntax-jsx';
 import { addNamed, addNamespace, isModule } from '@babel/helper-module-imports';
 import { type NodePath } from '@babel/traverse';
 import transformVueJSX from './transform-vue-jsx';
-import sugarFragment from './sugar-fragment';
 import type { State, VueJSXPluginOptions } from './interface';
 
 export { VueJSXPluginOptions };

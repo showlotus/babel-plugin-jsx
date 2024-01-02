@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor';
 import { watchEffect } from 'vue';
 import { type PluginItem, transform } from '@babel/core';
 import babelPluginJsx from '@vue/babel-plugin-jsx';
-import babelPluginTransfromTs from '@babel/plugin-transform-typescript';
+import babelPluginTransformTs from '@babel/plugin-transform-typescript';
 import {
   type VueJSXPluginOptions,
   compilerOptions,
@@ -76,7 +76,7 @@ function main() {
     const plugins = [
       [babelPluginJsx, compilerOptions],
       compilerOptions.isTSX && [
-        babelPluginTransfromTs,
+        babelPluginTransformTs,
         { isTSX: true, allExtensions: true },
       ],
     ].filter(Boolean) as PluginItem[];
