@@ -1,0 +1,37 @@
+{
+  "name": "vue-jsx-monorepo",
+  "private": true,
+  "packageManager": "pnpm@8.10.0",
+  "scripts": {
+    "build": "pnpm run -r build",
+    "test": "vitest",
+    "lint": "eslint --cache .",
+    "format": "prettier --write .",
+    "typecheck": "tsc",
+    "release": "bumpp -r",
+    "refresh": "rm -rf **/node_modules && pnpm i --offline"
+  },
+  "license": "MIT",
+  "keywords": [
+    "vue",
+    "jsx"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-babel": "^6.0.4",
+    "@types/babel__core": "^7.20.3",
+    "@types/node": "^20.8.9",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@vitest/coverage-v8": "^0.34.6",
+    "bumpp": "^9.2.0",
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "jsdom": "^22.1.0",
+    "prettier": "^3.0.3",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.1",
+    "vitest": "^0.34.6"
+  },
+  "version": "1.1.5"
+}
