@@ -53,10 +53,8 @@ var checkIsComponent = (path, state) => {
     return shouldTransformedToSlots(namePath.node.property.name);
   }
   const tag = namePath.node.name;
-  if (tag === "template") {
-    return true;
-  }
-  return !((_b = (_a = state.opts).isCustomElement) == null ? void 0 : _b.call(_a, tag)) && shouldTransformedToSlots(tag) && !htmlTags.includes(tag) && !svgTags.includes(tag);
+  return !((_b = (_a = state.opts).isCustomElement) == null ? void 0 : _b.call(_a, tag)) && // shouldTransformedToSlots(tag) &&
+  !htmlTags.includes(tag) && !svgTags.includes(tag);
 };
 var transformJSXMemberExpression = (path) => {
   const objectPath = path.node.object;
@@ -72,9 +70,8 @@ var getTag = (path, state) => {
   const namePath = path.get("openingElement").get("name");
   if (namePath.isJSXIdentifier()) {
     const { name } = namePath.node;
-    if (name === "template" || !htmlTags.includes(name) && !svgTags.includes(name)) {
-      console.log(name);
-      return t.stringLiteral(name);
+    if (!htmlTags.includes(name) && !svgTags.includes(name)) {
+      return path.scope.hasBinding(name) ? t.identifier(name) : t.stringLiteral(name);
       return name === FRAGMENT ? createIdentifier(state, FRAGMENT) : path.scope.hasBinding(name) ? t.identifier(name) : ((_b = (_a = state.opts).isCustomElement) == null ? void 0 : _b.call(_a, name)) ? t.stringLiteral(name) : t.callExpression(createIdentifier(state, "resolveComponent"), [
         t.stringLiteral(name)
       ]);
@@ -141,6 +138,11 @@ var onRE = /^on[^a-z]/;
 var isOn = (key) => onRE.test(key);
 
 // src/transform-vue-jsx.ts
+var Components = {
+  Fragment: "Fragment",
+  Template: "Template",
+  Dialog: "Dialog"
+};
 var getJSXAttributeValue = (path, state) => {
   const valuePath = path.get("value");
   if (valuePath.isJSXElement()) {
@@ -257,7 +259,10 @@ var genProps = (props) => {
   return result;
 };
 var genComponent = (component) => {
-  return t2.objectProperty(t2.identifier("component"), component);
+  return t2.objectProperty(
+    t2.identifier("component"),
+    t2.isStringLiteral(component) ? component : component.name.indexOf(":") > -1 ? t2.stringLiteral(component.name) : component
+  );
 };
 var genKey = (() => {
   let idx = 0;
@@ -281,18 +286,34 @@ var isNamedSlot = (slot) => {
   const properties = slot.properties;
   const componentPropertyIdx = properties.findIndex((item) => {
     if (t2.isObjectProperty(item)) {
-      return item.key.name === "component" && item.value.value.startsWith("template:");
+      return item.key.name === "component" && t2.isStringLiteral(item.value) && item.value.value.startsWith(`${Components.Template}:`);
     }
   });
   if (componentPropertyIdx > -1) {
     const componentProperty = properties[componentPropertyIdx];
     const oldVal = componentProperty.value.value;
     const slotName = oldVal.split(":")[1];
-    componentProperty.value.value = "template";
     properties.splice(componentPropertyIdx, 1);
     return slotName;
   }
   return "";
+};
+var genChildSlot = (slot, slotName) => {
+  const targetSlots = slot.properties.find((v) => {
+    return t2.isObjectProperty(v) && v.key.name === "slots";
+  });
+  if (!targetSlots) {
+    return slot;
+  }
+  const targetDefault = targetSlots.value.properties.find((v) => {
+    return t2.isObjectProperty(v) && v.key.name === "default";
+  });
+  const value = targetDefault.value;
+  if (slotName === "buttons") {
+    return t2.isArrayExpression(value) ? value : t2.arrayExpression([value]);
+  } else {
+    return value;
+  }
 };
 var genSlots = (slots) => {
   const defaultSlots = [];
@@ -302,11 +323,11 @@ var genSlots = (slots) => {
     const properties = slot.properties;
     const slotName = isNamedSlot(slot);
     if (slotName) {
-      namedSlots[slotName] = slot;
+      namedSlots[slotName] = genChildSlot(slot, slotName);
     } else if (properties) {
       const componentPropertyIdx = properties.findIndex((item) => {
         if (t2.isObjectProperty(item)) {
-          return item.key.name === "component" && item.value.value === "Modal";
+          return item.key.name === "component" && (t2.isStringLiteral(item.value) && item.value.value === Components.Dialog || t2.isIdentifier(item.value) && item.value.name === Components.Dialog);
         }
       });
       if (componentPropertyIdx > -1) {
@@ -332,14 +353,17 @@ var genSlots = (slots) => {
         }),
         dialogSlots.length && t2.objectProperty(
           t2.identifier("dialog"),
-          dialogSlots.length <= 1 ? (dialogSlots == null ? void 0 : dialogSlots[0]) || t2.objectExpression([]) : t2.arrayExpression(dialogSlots)
+          t2.arrayExpression(dialogSlots)
         )
       ].filter(Boolean)
     )
   );
 };
 var isTemplate = (tag) => {
-  return tag.value === "template";
+  return tag.name === Components.Template;
+};
+var isFragment = (tag) => {
+  return tag.name === Components.Fragment;
 };
 var hasSlot = (path, state) => {
   const attributes = path.get("openingElement").get("attributes");
@@ -358,16 +382,27 @@ var hasSlot = (path, state) => {
 var transformJSXElement = (path, state) => {
   const children = getChildren(path.get("children"), state);
   const { tag, props } = buildProps(path, state);
+  if (isFragment(tag)) {
+    return t2.objectExpression(
+      [
+        genKey(path, state),
+        ...genProps(props),
+        children.length && genSlots(children)
+      ].filter(Boolean)
+    );
+  }
   const slotName = hasSlot(path, state);
   if (isTemplate(tag) && slotName) {
-    tag.value += `:${slotName}`;
+    tag.name += `:${slotName}`;
   }
-  return t2.objectExpression([
-    genKey(path, state),
-    genComponent(tag),
-    ...genProps(props),
-    genSlots(children)
-  ]);
+  return t2.objectExpression(
+    [
+      genKey(path, state),
+      genComponent(tag),
+      ...genProps(props),
+      children.length && genSlots(children)
+    ].filter(Boolean)
+  );
 };
 var visitor = {
   "JSXFragment|JSXText": {
@@ -388,8 +423,8 @@ var visitor = {
         return;
       }
       const parent = path.findParent((parentPath) => parentPath.isJSXElement());
-      const { reactiveWrapRoot } = state.opts;
-      const nodes = !parent && reactiveWrapRoot ? t2.callExpression(createIdentifier(state, "reactive"), [
+      const { isReactiveRoot } = state.opts;
+      const nodes = !parent && isReactiveRoot ? t2.callExpression(createIdentifier(state, "reactive"), [
         transformJSXElement(path, state)
       ]) : transformJSXElement(path, state);
       path.replaceWith(nodes);

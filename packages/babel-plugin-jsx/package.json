@@ -1,7 +1,7 @@
 {
   "name": "@showlotus/babel-plugin-jsx",
-  "version": "1.1.5",
-  "description": "Babel plugin for Vue 3 JSX",
+  "version": "0.0.1-alpha.1",
+  "description": "Babel plugin for JSX",
   "author": "showlotus <showlotus2000@gmail.com>",
   "homepage": "https://github.com/showlotus/babel-plugin-jsx/tree/main/packages/babel-plugin-jsx#readme",
   "license": "MIT",

@@ -24,7 +24,7 @@ interface VueJSXPluginOptions {
     /** some api source */
     librarySource?: string;
     /** use reactive wrap the root's outer */
-    reactiveWrapRoot?: boolean;
+    isReactiveRoot?: boolean;
     /**
      * a method of generating key.
      *
