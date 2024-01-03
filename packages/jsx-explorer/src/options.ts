@@ -10,7 +10,7 @@ export const compilerOptions: VueJSXPluginOptions = reactive({
   enableObjectSlots: true,
   isTSX: true,
   librarySource: 'vue',
-  reactiveWrapRoot: true,
+  isReactiveRoot: true,
   customKey: 'ONE_JSX_LOADER',
 });
 
@@ -49,19 +49,19 @@ const App = {
             h('label', { for: 'isTSX' }, 'isTSX'),
           ]),
 
-          // reactiveWrapRoot
+          // isReactiveRoot
           h('li', [
             h('input', {
               type: 'checkbox',
-              id: 'reactiveWrapRoot',
-              checked: compilerOptions.reactiveWrapRoot,
+              id: 'isReactiveRoot',
+              checked: compilerOptions.isReactiveRoot,
               onChange(e: Event) {
-                compilerOptions.reactiveWrapRoot = (
+                compilerOptions.isReactiveRoot = (
                   e.target as HTMLInputElement
                 ).checked;
               },
             }),
-            h('label', { for: 'reactiveWrapRoot' }, 'reactiveWrapRoot'),
+            h('label', { for: 'isReactiveRoot' }, 'isReactiveRoot'),
           ]),
 
           // select library source

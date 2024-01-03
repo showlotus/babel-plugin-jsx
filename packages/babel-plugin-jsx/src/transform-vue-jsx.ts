@@ -15,6 +15,12 @@ import {
 import SlotFlags from './slotFlags';
 import type { State } from './interface';
 
+const Components = {
+  Fragment: 'Fragment',
+  Template: 'Template',
+  Dialog: 'Dialog',
+}
+
 const getJSXAttributeValue = (
   path: NodePath<t.JSXAttribute>,
   state: State
@@ -34,7 +40,7 @@ const getJSXAttributeValue = (
 };
 
 const buildProps = (path: NodePath<t.JSXElement>, state: State) => {
-  const tag = getTag(path, state);
+  const tag = getTag(path, state) as t.Identifier;
   const props = path.get('openingElement').get('attributes');
   if (props.length === 0) {
     return {
@@ -166,8 +172,11 @@ const genProps = (props: t.ObjectExpression) => {
   return result;
 };
 
-const genComponent = (component: t.StringLiteral) => {
-  return t.objectProperty(t.identifier('component'), component);
+const genComponent = (component: t.Identifier) => {
+  return t.objectProperty(
+    t.identifier('component'), 
+    component.name.indexOf(":") > -1 ? t.stringLiteral(component.name) : component
+  );
 };
 
 const genKey = (() => {
@@ -196,17 +205,15 @@ const isNamedSlot = (slot: t.Expression) => {
     if (t.isObjectProperty(item)) {
       return (
         (item.key as t.Identifier).name === 'component' &&
-        (item.value as t.StringLiteral).value.startsWith('template:')
+        t.isStringLiteral(item.value) &&
+        item.value.value.startsWith(`${Components.Template}:`)
       );
     }
   });
   if (componentPropertyIdx > -1) {
-    const componentProperty = properties[
-      componentPropertyIdx
-    ] as t.ObjectProperty;
+    const componentProperty = properties[componentPropertyIdx] as t.ObjectProperty;
     const oldVal = (componentProperty.value as t.StringLiteral).value;
     const slotName = oldVal.split(':')[1];
-    (componentProperty.value as t.StringLiteral).value = 'template';
     properties.splice(componentPropertyIdx, 1);
     return slotName;
   }
@@ -225,9 +232,13 @@ const genSlots = (slots: t.Expression[]) => {
     } else if (properties) {
       const componentPropertyIdx = properties.findIndex((item) => {
         if (t.isObjectProperty(item)) {
+          console.log(item);
           return (
             (item.key as t.Identifier).name === 'component' &&
-            (item.value as t.StringLiteral).value === 'Modal'
+            (
+              t.isStringLiteral(item.value) && item.value.value === Components.Dialog ||
+              t.isIdentifier(item.value) && item.value.name === Components.Dialog
+            )
           );
         }
       });
@@ -268,9 +279,13 @@ const genSlots = (slots: t.Expression[]) => {
   );
 };
 
-const isTemplate = (tag: t.StringLiteral) => {
-  return tag.value === 'template';
+const isTemplate = (tag: t.Identifier) => {
+  return tag.name === Components.Template;
 };
+
+const isFragment = (tag: t.Identifier) => {
+  return tag.name === Components.Fragment;
+}
 
 const hasSlot = (path: NodePath<t.JSXElement>, state: State) => {
   const attributes = path.get('openingElement').get('attributes');
@@ -294,14 +309,22 @@ const transformJSXElement = (
   const children = getChildren(path.get('children'), state);
   const { tag, props } = buildProps(path, state);
 
+  if (isFragment(tag)) {
+    return t.objectExpression([
+      genKey(path, state),
+      ...genProps(props as t.ObjectExpression),
+      genSlots(children),
+    ])
+  }
+
   const slotName = hasSlot(path, state);
-  if (isTemplate(tag as t.StringLiteral) && slotName) {
-    (tag as t.StringLiteral).value += `:${slotName}`;
+  if (isTemplate(tag) && slotName) {
+    tag.name += `:${slotName}`;
   }
 
   return t.objectExpression([
     genKey(path, state),
-    genComponent(tag as t.StringLiteral),
+    genComponent(tag),
     ...genProps(props as t.ObjectExpression),
     genSlots(children),
   ]);
@@ -324,16 +347,16 @@ const visitor: Visitor<State> = {
       }
 
       // 移除无效的插槽节点
-      if (isTemplate(tag as t.StringLiteral) && !hasSlot(path, state)) {
+      if (isTemplate(tag as t.Identifier) && !hasSlot(path, state)) {
         path.remove();
         return;
       }
 
       const parent = path.findParent((parentPath) => parentPath.isJSXElement());
-      const { reactiveWrapRoot } = state.opts;
+      const { isReactiveRoot } = state.opts;
       // 在最外层的根节点外包裹一层 reactive
       const nodes =
-        !parent && reactiveWrapRoot
+        !parent && isReactiveRoot
           ? t.callExpression(createIdentifier(state, 'reactive'), [
               transformJSXElement(path, state),
             ])

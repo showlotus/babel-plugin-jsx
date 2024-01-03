@@ -56,14 +56,9 @@ export const checkIsComponent = (
   }
 
   const tag = (namePath as NodePath<t.JSXIdentifier>).node.name;
-
-  if (tag === 'template') {
-    return true;
-  }
-
   return (
     !state.opts.isCustomElement?.(tag) &&
-    shouldTransformedToSlots(tag) &&
+    // shouldTransformedToSlots(tag) &&
     !htmlTags.includes(tag as htmlTags.htmlTags) &&
     !svgTags.includes(tag)
   );
@@ -99,16 +94,16 @@ export const transformJSXMemberExpression = (
 export const getTag = (
   path: NodePath<t.JSXElement>,
   state: State
-): t.Identifier | t.CallExpression | t.StringLiteral | t.MemberExpression => {
+): t.Identifier | t.StringLiteral => {
   const namePath = path.get('openingElement').get('name');
   if (namePath.isJSXIdentifier()) {
     const { name } = namePath.node;
     if (
-      name === 'template' ||
       (!htmlTags.includes(name as htmlTags.htmlTags) && !svgTags.includes(name))
     ) {
-      console.log(name);
-      return t.stringLiteral(name);
+      return path.scope.hasBinding(name)
+        ? t.identifier(name)
+        : t.stringLiteral(name);
       return name === FRAGMENT
         ? createIdentifier(state, FRAGMENT)
         : path.scope.hasBinding(name)
