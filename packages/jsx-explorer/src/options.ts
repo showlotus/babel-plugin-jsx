@@ -25,9 +25,7 @@ const App = {
             userSelect: 'none',
           },
           onClick() {
-            window.open(
-              'https://showlotus.github.io/babel-plugin-jsx/packages/jsx-explorer/dist'
-            );
+            window.open('https://showlotus.github.io/babel-plugin-jsx/website');
           },
         },
         'babel-plugin-jsx explorer'
