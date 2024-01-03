@@ -172,10 +172,14 @@ const genProps = (props: t.ObjectExpression) => {
   return result;
 };
 
-const genComponent = (component: t.Identifier) => {
+const genComponent = (component: t.Identifier | t.StringLiteral) => {
   return t.objectProperty(
     t.identifier('component'), 
-    component.name.indexOf(":") > -1 ? t.stringLiteral(component.name) : component
+    t.isStringLiteral(component) 
+      ? component
+      : component.name.indexOf(":") > -1 
+        ? t.stringLiteral(component.name) 
+        : component
   );
 };
 
@@ -220,6 +224,17 @@ const isNamedSlot = (slot: t.Expression) => {
   return '';
 };
 
+const genButtonsSlot = (slot: t.ObjectExpression) => {
+  const targetSlots = (slot as t.ObjectExpression).properties.find(v => {
+    return t.isObjectProperty(v) && (v.key as t.Identifier).name === 'slots';
+  })! as t.ObjectProperty;
+  const targetDefault = (targetSlots.value as t.ObjectExpression).properties.find(v => {
+    return t.isObjectProperty(v) && (v.key as t.Identifier).name === 'default';
+  })!
+  const value = (targetDefault as t.ObjectProperty).value;
+  return t.isArrayExpression(value) ? value : t.arrayExpression([value as t.ObjectExpression]);
+}
+
 const genSlots = (slots: t.Expression[]) => {
   const defaultSlots = [] as t.Expression[];
   const namedSlots = {} as any;
@@ -228,11 +243,15 @@ const genSlots = (slots: t.Expression[]) => {
     const properties = (slot as t.ObjectExpression).properties;
     const slotName = isNamedSlot(slot);
     if (slotName) {
-      namedSlots[slotName] = slot;
+      // 对于 buttons 的具名插槽特殊处理
+      if (slotName === 'buttons') {
+        namedSlots[slotName] = genButtonsSlot(slot as t.ObjectExpression);
+      } else {
+        namedSlots[slotName] = slot;
+      }
     } else if (properties) {
       const componentPropertyIdx = properties.findIndex((item) => {
         if (t.isObjectProperty(item)) {
-          console.log(item);
           return (
             (item.key as t.Identifier).name === 'component' &&
             (
@@ -270,9 +289,7 @@ const genSlots = (slots: t.Expression[]) => {
         dialogSlots.length &&
           t.objectProperty(
             t.identifier('dialog'),
-            dialogSlots.length <= 1
-              ? dialogSlots?.[0] || t.objectExpression([])
-              : t.arrayExpression(dialogSlots)
+            t.arrayExpression(dialogSlots)
           ),
       ].filter(Boolean) as t.ObjectProperty[]
     )
