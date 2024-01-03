@@ -19,7 +19,7 @@ const Components = {
   Fragment: 'Fragment',
   Template: 'Template',
   Dialog: 'Dialog',
-}
+};
 
 const getJSXAttributeValue = (
   path: NodePath<t.JSXAttribute>,
@@ -174,12 +174,12 @@ const genProps = (props: t.ObjectExpression) => {
 
 const genComponent = (component: t.Identifier | t.StringLiteral) => {
   return t.objectProperty(
-    t.identifier('component'), 
-    t.isStringLiteral(component) 
+    t.identifier('component'),
+    t.isStringLiteral(component)
       ? component
-      : component.name.indexOf(":") > -1 
-        ? t.stringLiteral(component.name) 
-        : component
+      : component.name.indexOf(':') > -1
+      ? t.stringLiteral(component.name)
+      : component
   );
 };
 
@@ -215,7 +215,9 @@ const isNamedSlot = (slot: t.Expression) => {
     }
   });
   if (componentPropertyIdx > -1) {
-    const componentProperty = properties[componentPropertyIdx] as t.ObjectProperty;
+    const componentProperty = properties[
+      componentPropertyIdx
+    ] as t.ObjectProperty;
     const oldVal = (componentProperty.value as t.StringLiteral).value;
     const slotName = oldVal.split(':')[1];
     properties.splice(componentPropertyIdx, 1);
@@ -224,16 +226,28 @@ const isNamedSlot = (slot: t.Expression) => {
   return '';
 };
 
-const genButtonsSlot = (slot: t.ObjectExpression) => {
-  const targetSlots = (slot as t.ObjectExpression).properties.find(v => {
+const genChildSlot = (slot: t.ObjectExpression, slotName: string) => {
+  const targetSlots = (slot as t.ObjectExpression).properties.find((v) => {
     return t.isObjectProperty(v) && (v.key as t.Identifier).name === 'slots';
   })! as t.ObjectProperty;
-  const targetDefault = (targetSlots.value as t.ObjectExpression).properties.find(v => {
+  if (!targetSlots) {
+    return slot;
+  }
+
+  const targetDefault = (
+    targetSlots.value as t.ObjectExpression
+  ).properties.find((v) => {
     return t.isObjectProperty(v) && (v.key as t.Identifier).name === 'default';
-  })!
+  })!;
   const value = (targetDefault as t.ObjectProperty).value;
-  return t.isArrayExpression(value) ? value : t.arrayExpression([value as t.ObjectExpression]);
-}
+  if (slotName === 'buttons') {
+    return t.isArrayExpression(value)
+      ? value
+      : t.arrayExpression([value as t.ObjectExpression]);
+  } else {
+    return value;
+  }
+};
 
 const genSlots = (slots: t.Expression[]) => {
   const defaultSlots = [] as t.Expression[];
@@ -243,21 +257,17 @@ const genSlots = (slots: t.Expression[]) => {
     const properties = (slot as t.ObjectExpression).properties;
     const slotName = isNamedSlot(slot);
     if (slotName) {
-      // 对于 buttons 的具名插槽特殊处理
-      if (slotName === 'buttons') {
-        namedSlots[slotName] = genButtonsSlot(slot as t.ObjectExpression);
-      } else {
-        namedSlots[slotName] = slot;
-      }
+      // 对于具名插槽特殊处理
+      namedSlots[slotName] = genChildSlot(slot as t.ObjectExpression, slotName);
     } else if (properties) {
       const componentPropertyIdx = properties.findIndex((item) => {
         if (t.isObjectProperty(item)) {
           return (
             (item.key as t.Identifier).name === 'component' &&
-            (
-              t.isStringLiteral(item.value) && item.value.value === Components.Dialog ||
-              t.isIdentifier(item.value) && item.value.name === Components.Dialog
-            )
+            ((t.isStringLiteral(item.value) &&
+              item.value.value === Components.Dialog) ||
+              (t.isIdentifier(item.value) &&
+                item.value.name === Components.Dialog))
           );
         }
       });
@@ -302,7 +312,7 @@ const isTemplate = (tag: t.Identifier) => {
 
 const isFragment = (tag: t.Identifier) => {
   return tag.name === Components.Fragment;
-}
+};
 
 const hasSlot = (path: NodePath<t.JSXElement>, state: State) => {
   const attributes = path.get('openingElement').get('attributes');
@@ -327,11 +337,13 @@ const transformJSXElement = (
   const { tag, props } = buildProps(path, state);
 
   if (isFragment(tag)) {
-    return t.objectExpression([
-      genKey(path, state),
-      ...genProps(props as t.ObjectExpression),
-      genSlots(children),
-    ])
+    return t.objectExpression(
+      [
+        genKey(path, state),
+        ...genProps(props as t.ObjectExpression),
+        children.length && genSlots(children),
+      ].filter(Boolean) as t.ObjectProperty[]
+    );
   }
 
   const slotName = hasSlot(path, state);
@@ -339,12 +351,14 @@ const transformJSXElement = (
     tag.name += `:${slotName}`;
   }
 
-  return t.objectExpression([
-    genKey(path, state),
-    genComponent(tag),
-    ...genProps(props as t.ObjectExpression),
-    genSlots(children),
-  ]);
+  return t.objectExpression(
+    [
+      genKey(path, state),
+      genComponent(tag),
+      ...genProps(props as t.ObjectExpression),
+      children.length && genSlots(children),
+    ].filter(Boolean) as t.ObjectProperty[]
+  );
 };
 
 const visitor: Visitor<State> = {
