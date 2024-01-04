@@ -32,10 +32,9 @@ Default: `false`
 
 是否返回一个响应式的结果。
 
-为 `false` 时：
+输入
 
 ```jsx
-// input
 function useFn() {
   return <Fragment title="name" showOverflow>
     <Select>
@@ -47,98 +46,87 @@ function useFn() {
 }
 ```
 
-```js
-// output
-function useFn() {
-  return {
-    props: {
-      "title": "name",
-      "showOverflow": true
-    },
-    slots: {
-      default: {
-        component: Select,
-        slots: {
-          default: [{
-            component: Option,
-            props: {
-              "label": "1",
-              "value": 1
-            }
-          }, {
-            component: Option,
-            props: {
-              "label": "2",
-              "value": 2
-            }
-          }, {
-            component: Option,
-            props: {
-              "label": "3",
-              "value": 3
-            }
-          }]
+输出
+
+- 为 `false` 时：
+
+  ```js
+  function useFn() {
+    return {
+      props: {
+        "title": "name",
+        "showOverflow": true
+      },
+      slots: {
+        default: {
+          component: Select,
+          slots: {
+            default: [{
+              component: Option,
+              props: {
+                "label": "1",
+                "value": 1
+              }
+            }, {
+              component: Option,
+              props: {
+                "label": "2",
+                "value": 2
+              }
+            }, {
+              component: Option,
+              props: {
+                "label": "3",
+                "value": 3
+              }
+            }]
+          }
         }
       }
-    }
-  };
-}
-```
+    };
+  }
+  ```
 
-为 `true` 时：
+- 为 `true` 时：
 
 
-```jsx
-// input
-function useFn() {
-  return <Fragment title="name" showOverflow>
-    <Select>
-      <Option label="1" value={1} />
-      <Option label="2" value={2} />
-      <Option label="3" value={3} />
-    </Select>
-  </Fragment>
-}
-```
-
-```js
-// output
-import { reactive as _reactive } from "vue";
-function useFn() {
-  return _reactive({
-    props: {
-      "title": "name",
-      "showOverflow": true
-    },
-    slots: {
-      default: {
-        component: Select,
-        slots: {
-          default: [{
-            component: Option,
-            props: {
-              "label": "1",
-              "value": 1
-            }
-          }, {
-            component: Option,
-            props: {
-              "label": "2",
-              "value": 2
-            }
-          }, {
-            component: Option,
-            props: {
-              "label": "3",
-              "value": 3
-            }
-          }]
+  ```js
+  import { reactive as _reactive } from "vue";
+  function useFn() {
+    return _reactive({
+      props: {
+        "title": "name",
+        "showOverflow": true
+      },
+      slots: {
+        default: {
+          component: Select,
+          slots: {
+            default: [{
+              component: Option,
+              props: {
+                "label": "1",
+                "value": 1
+              }
+            }, {
+              component: Option,
+              props: {
+                "label": "2",
+                "value": 2
+              }
+            }, {
+              component: Option,
+              props: {
+                "label": "3",
+                "value": 3
+              }
+            }]
+          }
         }
       }
-    }
-  });
-}
-```
+    });
+  }
+  ```
 
 #### librarySource
 
