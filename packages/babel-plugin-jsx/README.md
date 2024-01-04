@@ -1,6 +1,6 @@
 # Babel Plugin JSX
 
-[![NPM version](https://img.shields.io/npm/v/bumpp?color=42a5f5&label=)](https://www.npmjs.com/package/@showlotus/babel-plugin-jsx)
+[![NPM version](https://img.shields.io/npm/v/@showlotus/babel-plugin-jsx?color=42a5f5&label=)](https://www.npmjs.com/package/@showlotus/babel-plugin-jsx)
 
 Forked from [`babel-plugin-jsx`](https://github.com/vuejs/babel-plugin-jsx)
 
