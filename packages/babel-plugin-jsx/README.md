@@ -35,14 +35,14 @@ Default: `false`
 输入
 
 ```jsx
+import { Fragment, Select } from '.';
+
 function useFn() {
-  return <Fragment title="name" showOverflow>
-    <Select>
-      <Option label="1" value={1} />
-      <Option label="2" value={2} />
-      <Option label="3" value={3} />
-    </Select>
-  </Fragment>
+  return (
+    <Fragment title="name" showOverflow>
+      <Select />
+    </Fragment>
+  );
 }
 ```
 
@@ -51,79 +51,38 @@ function useFn() {
 - 为 `false` 时：
 
   ```js
+  import { Fragment, Select } from '.';
   function useFn() {
     return {
       props: {
-        "title": "name",
-        "showOverflow": true
+        title: 'name',
+        showOverflow: true,
       },
       slots: {
         default: {
           component: Select,
-          slots: {
-            default: [{
-              component: Option,
-              props: {
-                "label": "1",
-                "value": 1
-              }
-            }, {
-              component: Option,
-              props: {
-                "label": "2",
-                "value": 2
-              }
-            }, {
-              component: Option,
-              props: {
-                "label": "3",
-                "value": 3
-              }
-            }]
-          }
-        }
-      }
+        },
+      },
     };
   }
   ```
 
 - 为 `true` 时：
 
-
   ```js
-  import { reactive as _reactive } from "vue";
+  import { reactive as _reactive } from 'vue';
+  import { Fragment, Select } from '.';
   function useFn() {
     return _reactive({
       props: {
-        "title": "name",
-        "showOverflow": true
+        title: 'name',
+        showOverflow: true,
       },
       slots: {
         default: {
           component: Select,
-          slots: {
-            default: [{
-              component: Option,
-              props: {
-                "label": "1",
-                "value": 1
-              }
-            }, {
-              component: Option,
-              props: {
-                "label": "2",
-                "value": 2
-              }
-            }, {
-              component: Option,
-              props: {
-                "label": "3",
-                "value": 3
-              }
-            }]
-          }
-        }
-      }
+        },
+      },
     });
   }
   ```
@@ -132,136 +91,322 @@ function useFn() {
 
 Type: `string`
 
-Default: `Vue`，可选值：`vue`、`vue-demi`、`@vue/composition-api`。
+Default: `vue`，可选值：`vue`、`vue-demi`、`@vue/composition-api`。
 
-自定义元素
+`reactive` 来源。
 
-#### customKey
+```js
+import { reactive as _reactive } from 'vue';
+import { reactive as _reactive } from 'vue-demi';
+import { reactive as _reactive } from '@vue/composition-api';
+```
+
+#### injectKey
 
 Type: `boolean`
 
-Default: `true`
+Default: `false`
 
-合并 class / style / onXXX handlers
+是否注入 `key`，为每个组件都生成一个唯一的 `key`。开启后，可搭配 `customKey`（`string` 或 `Function`） 共同使用。
 
-## 表达式
+输入
 
-### 内容
+```js
+import { Fragment, Select } from '.';
 
-函数式组件
-
-```jsx
-const App = () => <div></div>;
+function useFn() {
+  return (
+    <Fragment title="name" showOverflow>
+      <Select />
+    </Fragment>
+  );
+}
 ```
 
-在 render 中使用
+输出
 
-```jsx
-const App = {
-  render() {
-    return <div>Vue 3.0</div>;
-  },
-};
-```
+- 不指定 `customKey`，默认为 `"BABEL_JSX_PLUGIN"`：
 
-```jsx
-import { withModifiers, defineComponent } from 'vue';
-
-const App = defineComponent({
-  setup() {
-    const count = ref(0);
-
-    const inc = () => {
-      count.value++;
+  ```js
+  import { Fragment, Select } from '.';
+  function useFn() {
+    return {
+      key: 'BABEL_JSX_PLUGIN_1',
+      props: {
+        title: 'name',
+        showOverflow: true,
+      },
+      slots: {
+        default: {
+          key: 'BABEL_JSX_PLUGIN_0',
+          component: Select,
+        },
+      },
     };
+  }
+  ```
 
-    return () => (
-      <div onClick={withModifiers(inc, ['self'])}>{count.value}</div>
-    );
-  },
-});
-```
+- 指定 `customKey` 为 `"Only_You"`：
 
-Fragment
-
-```jsx
-const App = () => (
-  <>
-    <span>I'm</span>
-    <span>Fragment</span>
-  </>
-);
-```
-
-### Attributes / Props
-
-```jsx
-const App = () => <input type="email" />;
-```
-
-动态绑定:
-
-```jsx
-const placeholderText = 'email';
-const App = () => <input type="email" placeholder={placeholderText} />;
-```
-
-### 插槽
-
-> 注意: 在 `jsx` 中，应该使用 **`v-slots`** 代替 _`v-slot`_
-
-```jsx
-const A = (props, { slots }) => (
-  <>
-    <h1>{slots.default ? slots.default() : 'foo'}</h1>
-    <h2>{slots.bar?.()}</h2>
-  </>
-);
-
-const App = {
-  setup() {
-    const slots = {
-      bar: () => <span>B</span>,
+  ```js
+  import { Fragment, Select } from '.';
+  function useFn() {
+    return {
+      key: 'Only_You_1',
+      props: {
+        title: 'name',
+        showOverflow: true,
+      },
+      slots: {
+        default: {
+          key: 'Only_You_0',
+          component: Select,
+        },
+      },
     };
-    return () => (
-      <A v-slots={slots}>
-        <div>A</div>
-      </A>
-    );
-  },
-};
+  }
+  ```
 
-// or
+- 指定 `customKey` 为一个函数，则需要确保每次调用时，都返回一个唯一的结果，否则可能会导致不同组件有相同的 `key`：
 
-const App = {
-  setup() {
-    const slots = {
-      default: () => <div>A</div>,
-      bar: () => <span>B</span>,
+  ```js
+  let count = 1;
+  function customKey() {
+    return `Custom_Key_${count++}`;
+  }
+  ```
+
+  ```js
+  import { Fragment, Select } from '.';
+  function useFn() {
+    return {
+      key: 'Custom_Key_2',
+      props: {
+        title: 'name',
+        showOverflow: true,
+      },
+      slots: {
+        default: {
+          key: 'Custom_Key_1',
+          component: Select,
+        },
+      },
     };
-    return () => <A v-slots={slots} />;
-  },
-};
+  }
+  ```
 
-// 或者，当 `enableObjectSlots` 不是 `false` 时，您可以使用对象插槽
-const App = {
-  setup() {
-    return () => (
-      <>
-        <A>
-          {{
-            default: () => <div>A</div>,
-            bar: () => <span>B</span>,
-          }}
-        </A>
-        <B>{() => 'foo'}</B>
-      </>
-    );
-  },
-};
+## 组件
+
+### Dialog
+
+弹窗组件，所有组件名为 `Dialog` 的组件，会放在根组件的具名插槽 `dialog` 下。
+
+输入：
+
+```js
+import { Dialog, Form, FormItem } from '.';
+
+function useFn() {
+  return (
+    <Form>
+      <FormItem label="name" prop="name" />
+      <FormItem label="age" prop="age" />
+      <Dialog visible={visible} title="title" />
+    </Form>
+  );
+}
 ```
 
-### 在 TypeScript 中使用
+输出：
+
+```js
+import { Dialog, Form, FormItem } from '.';
+function useFn() {
+  return {
+    component: Form,
+    slots: {
+      default: [
+        {
+          component: FormItem,
+          props: {
+            label: 'name',
+            prop: 'name',
+          },
+        },
+        {
+          component: FormItem,
+          props: {
+            label: 'age',
+            prop: 'age',
+          },
+        },
+      ],
+      dialog: [
+        {
+          props: {
+            visible: visible,
+            title: 'title',
+          },
+        },
+      ],
+    },
+  };
+}
+```
+
+### Fragment
+
+无 `component` 属性的组件。
+
+输入：
+
+```js
+import { Fragment, Option, Select } from '.';
+
+function useFn() {
+  return (
+    <Fragment title="name" showOverflow>
+      <Select>
+        <Option label="1" value={1} />
+        <Option label="2" value={2} />
+        <Option label="3" value={3} />
+      </Select>
+    </Fragment>
+  );
+}
+```
+
+输出：
+
+```js
+import { Fragment, Option, Select } from '.';
+function useFn() {
+  return {
+    props: {
+      title: 'name',
+      showOverflow: true,
+    },
+    slots: {
+      default: {
+        component: Select,
+        slots: {
+          default: [
+            {
+              component: Option,
+              props: {
+                label: '1',
+                value: 1,
+              },
+            },
+            {
+              component: Option,
+              props: {
+                label: '2',
+                value: 2,
+              },
+            },
+            {
+              component: Option,
+              props: {
+                label: '3',
+                value: 3,
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+}
+```
+
+### Template
+
+具名插槽组件。通过配置 `slot` 属性指定插槽名称。
+
+输入：
+
+```js
+import { Button, Form, FormItem, Fragment, Option, Select, Template } from '.';
+
+function useFn() {
+  return (
+    <Fragment title="name" showOverflow>
+      <Template slot="header" title="xxx" />
+      <Template slot="default">
+        <Form>
+          <FormItem label="name" prop="name" />
+          <FormItem label="age" prop="age" />
+        </Form>
+      </Template>
+      <Template slot="footer">
+        <Button type="default" text="cancel" />
+        <Button type="primary" text="confirm" />
+      </Template>
+    </Fragment>
+  );
+}
+```
+
+输出：
+
+```js
+import { Button, Form, FormItem, Fragment, Option, Select, Template } from '.';
+function useFn() {
+  return {
+    props: {
+      title: 'name',
+      showOverflow: true,
+    },
+    slots: {
+      header: {
+        props: {
+          title: 'xxx',
+        },
+      },
+      default: {
+        component: Form,
+        slots: {
+          default: [
+            {
+              component: FormItem,
+              props: {
+                label: 'name',
+                prop: 'name',
+              },
+            },
+            {
+              component: FormItem,
+              props: {
+                label: 'age',
+                prop: 'age',
+              },
+            },
+          ],
+        },
+      },
+      footer: [
+        {
+          component: Button,
+          props: {
+            type: 'default',
+            text: 'cancel',
+          },
+        },
+        {
+          component: Button,
+          props: {
+            type: 'primary',
+            text: 'confirm',
+          },
+        },
+      ],
+    },
+  };
+}
+```
+
+## 在 TypeScript 中使用
 
 `tsconfig.json`:
 

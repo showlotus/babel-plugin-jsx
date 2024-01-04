@@ -1,7 +1,15 @@
-export const templateStr = `// @ts-expect-error
-import { Template, Fragment, Dialog } from 'one-jsx-loader'
-// @ts-expect-error
-import { Form, FormItem, Grid, Column, Icon, Tag, Button, Input, Select } from './components'
+export const templateStr = `import { Template, Fragment, Dialog } from '.'
+import { 
+  Form,
+  FormItem,
+  Grid,
+  Column,
+  Icon,
+  Tag,
+  Button,
+  Input,
+  Select
+} from './components'
 
 function useHeader() {
   return <Fragment title="xxx" tips="zzz" />

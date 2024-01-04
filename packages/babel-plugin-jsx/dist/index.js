@@ -301,7 +301,7 @@ var genKey = (() => {
     return `${prefix}_${idx++}`;
   };
   return (path, state) => {
-    const { customKey = "ONE_JSX_LOADER" } = state.opts;
+    const { customKey = "BABEL_PLUGIN_JSX" } = state.opts;
     return t2.objectProperty(
       t2.identifier("key"),
       t2.stringLiteral(
@@ -413,10 +413,11 @@ var hasSlot = (path, state) => {
 var transformJSXElement = (path, state) => {
   const children = getChildren(path.get("children"), state);
   const { tag, props } = buildProps(path, state);
+  const { injectKey } = state.opts;
   if (isFragment(tag)) {
     return t2.objectExpression(
       [
-        genKey(path, state),
+        injectKey && genKey(path, state),
         ...genProps(props),
         children.length && genSlots(children)
       ].filter(Boolean)
@@ -428,7 +429,7 @@ var transformJSXElement = (path, state) => {
   }
   return t2.objectExpression(
     [
-      genKey(path, state),
+      injectKey && genKey(path, state),
       genComponent(tag),
       ...genProps(props),
       children.length && genSlots(children)

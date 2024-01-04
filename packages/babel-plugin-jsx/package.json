@@ -1,6 +1,6 @@
 {
   "name": "@showlotus/babel-plugin-jsx",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.2",
   "description": "Babel plugin for JSX",
   "author": "showlotus <showlotus2000@gmail.com>",
   "homepage": "https://github.com/showlotus/babel-plugin-jsx/tree/main/packages/babel-plugin-jsx#readme",

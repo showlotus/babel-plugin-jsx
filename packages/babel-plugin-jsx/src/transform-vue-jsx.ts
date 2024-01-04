@@ -189,7 +189,7 @@ const genKey = (() => {
     return `${prefix}_${idx++}`;
   };
   return (path: NodePath<t.JSXElement>, state: State) => {
-    const { customKey = 'ONE_JSX_LOADER' } = state.opts;
+    const { customKey = 'BABEL_PLUGIN_JSX' } = state.opts;
     return t.objectProperty(
       t.identifier('key'),
       t.stringLiteral(

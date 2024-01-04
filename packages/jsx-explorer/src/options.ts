@@ -10,8 +10,8 @@ export const compilerOptions: VueJSXPluginOptions = reactive({
   enableObjectSlots: true,
   isTSX: true,
   librarySource: 'vue',
-  isReactiveRoot: true,
-  customKey: 'ONE_JSX_LOADER',
+  isReactiveRoot: false,
+  customKey: 'BABEL_PLUGIN_JSX',
   injectKey: false,
 });
 
@@ -109,22 +109,27 @@ const App = {
           h('label', { for: 'injectKey' }, 'injectKey'),
 
           // custom key
-          compilerOptions.injectKey && h('li', [
-            h('label', { for: 'customKey', style: { marginLeft: '22px' } }, 'customKey：'),
-            h('input', {
-              type: 'text',
-              id: 'customKey',
-              style: {
-                width: '200px',
-              },
-              value: compilerOptions.customKey,
-              onChange(e: Event) {
-                compilerOptions.customKey = (
-                  e.target as HTMLInputElement
-                ).value;
-              },
-            }),
-          ]),
+          compilerOptions.injectKey &&
+            h('li', [
+              h(
+                'label',
+                { for: 'customKey', style: { marginLeft: '22px' } },
+                'customKey：'
+              ),
+              h('input', {
+                type: 'text',
+                id: 'customKey',
+                style: {
+                  width: '200px',
+                },
+                value: compilerOptions.customKey,
+                onChange(e: Event) {
+                  compilerOptions.customKey = (
+                    e.target as HTMLInputElement
+                  ).value;
+                },
+              }),
+            ]),
         ]),
       ]),
     ];
