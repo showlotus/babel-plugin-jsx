@@ -335,11 +335,12 @@ const transformJSXElement = (
 ): t.CallExpression | t.ObjectExpression => {
   const children = getChildren(path.get('children'), state);
   const { tag, props } = buildProps(path, state);
+  const { injectKey } = state.opts;
 
   if (isFragment(tag)) {
     return t.objectExpression(
       [
-        genKey(path, state),
+        injectKey && genKey(path, state),
         ...genProps(props as t.ObjectExpression),
         children.length && genSlots(children),
       ].filter(Boolean) as t.ObjectProperty[]
@@ -353,7 +354,7 @@ const transformJSXElement = (
 
   return t.objectExpression(
     [
-      genKey(path, state),
+      injectKey && genKey(path, state),
       genComponent(tag),
       ...genProps(props as t.ObjectExpression),
       children.length && genSlots(children),

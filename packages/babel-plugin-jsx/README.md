@@ -1,23 +1,22 @@
-# Vue 3 Babel JSX 插件
+# Babel Plugin JSX
 
-[![npm package](https://img.shields.io/npm/v/@vue/babel-plugin-jsx.svg?style=flat-square)](https://www.npmjs.com/package/@vue/babel-plugin-jsx)
-[![issues-helper](https://img.shields.io/badge/Issues%20Manage%20By-issues--helper-orange?style=flat-square)](https://github.com/actions-cool/issues-helper)
+[![NPM version](https://img.shields.io/npm/v/bumpp?color=42a5f5&label=)](https://www.npmjs.com/package/@showlotus/babel-plugin-jsx)
 
-以 JSX 的方式来编写 Vue 代码
+Forked from [`babel-plugin-jsx`](https://github.com/vuejs/babel-plugin-jsx)
 
 ## 安装
 
 安装插件
 
 ```bash
-npm install @vue/babel-plugin-jsx -D
+npm install @showlotus/babel-plugin-jsx
 ```
 
 配置 Babel
 
 ```js
 {
-  "plugins": ["@vue/babel-plugin-jsx"]
+  "plugins": ["@showlotus/babel-plugin-jsx"]
 }
 ```
 
@@ -25,49 +24,137 @@ npm install @vue/babel-plugin-jsx -D
 
 ### 参数
 
-#### transformOn
+#### isReactiveRoot
 
 Type: `boolean`
 
 Default: `false`
 
-把 `on: { click: xx }` 转成 `onClick: xxx`
+是否返回一个响应式的结果。
 
-#### optimize
+为 `false` 时：
 
-Type: `boolean`
+```jsx
+// input
+function useFn() {
+  return <Fragment title="name" showOverflow>
+    <Select>
+      <Option label="1" value={1} />
+      <Option label="2" value={2} />
+      <Option label="3" value={3} />
+    </Select>
+  </Fragment>
+}
+```
 
-Default: `false`
+```js
+// output
+function useFn() {
+  return {
+    props: {
+      "title": "name",
+      "showOverflow": true
+    },
+    slots: {
+      default: {
+        component: Select,
+        slots: {
+          default: [{
+            component: Option,
+            props: {
+              "label": "1",
+              "value": 1
+            }
+          }, {
+            component: Option,
+            props: {
+              "label": "2",
+              "value": 2
+            }
+          }, {
+            component: Option,
+            props: {
+              "label": "3",
+              "value": 3
+            }
+          }]
+        }
+      }
+    }
+  };
+}
+```
 
-是否开启优化. 如果你对 Vue 3 不太熟悉，不建议打开
+为 `true` 时：
 
-#### isCustomElement
 
-Type: `(tag: string) => boolean`
+```jsx
+// input
+function useFn() {
+  return <Fragment title="name" showOverflow>
+    <Select>
+      <Option label="1" value={1} />
+      <Option label="2" value={2} />
+      <Option label="3" value={3} />
+    </Select>
+  </Fragment>
+}
+```
 
-Default: `undefined`
+```js
+// output
+import { reactive as _reactive } from "vue";
+function useFn() {
+  return _reactive({
+    props: {
+      "title": "name",
+      "showOverflow": true
+    },
+    slots: {
+      default: {
+        component: Select,
+        slots: {
+          default: [{
+            component: Option,
+            props: {
+              "label": "1",
+              "value": 1
+            }
+          }, {
+            component: Option,
+            props: {
+              "label": "2",
+              "value": 2
+            }
+          }, {
+            component: Option,
+            props: {
+              "label": "3",
+              "value": 3
+            }
+          }]
+        }
+      }
+    }
+  });
+}
+```
+
+#### librarySource
+
+Type: `string`
+
+Default: `Vue`，可选值：`vue`、`vue-demi`、`@vue/composition-api`。
 
 自定义元素
 
-#### mergeProps
+#### customKey
 
 Type: `boolean`
 
 Default: `true`
 
 合并 class / style / onXXX handlers
-
-#### enableObjectSlots
-
-使用 `enableObjectSlots` (文档下面会提到)。虽然在 JSX 中比较好使，但是会增加一些 `_isSlot` 的运行时条件判断，这会增加你的项目体积。即使你关闭了 `enableObjectSlots`，`v-slots` 还是可以使用
-
-#### pragma
-
-Type: `string`
-
-Default: `createVNode`
-
-替换编译 JSX 表达式的时候使用的函数
 
 ## 表达式
 
@@ -129,118 +216,6 @@ const App = () => <input type="email" />;
 ```jsx
 const placeholderText = 'email';
 const App = () => <input type="email" placeholder={placeholderText} />;
-```
-
-### 指令
-
-#### v-show
-
-```jsx
-const App = {
-  data() {
-    return { visible: true };
-  },
-  render() {
-    return <input v-show={this.visible} />;
-  },
-};
-```
-
-#### v-model
-
-> 注意：如果想要使用 `arg`, 第二个参数需要为字符串
-
-```jsx
-<input v-model={val} />
-```
-
-```jsx
-<input v-model:argument={val} />
-```
-
-```jsx
-<input v-model={[val, ['modifier']]} />
-```
-
-```jsx
-<A v-model={[val, 'argument', ['modifier']]} />
-```
-
-会编译成：
-
-```js
-h(A, {
-  argument: val,
-  argumentModifiers: {
-    modifier: true,
-  },
-  'onUpdate:argument': ($event) => (val = $event),
-});
-```
-
-#### v-models (从 1.1.0 开始不推荐使用)
-
-> 注意: 你应该传递一个二维数组给 v-models。
-
-```jsx
-<A v-models={[[foo], [bar, 'bar']]} />
-```
-
-```jsx
-<A
-  v-models={[
-    [foo, 'foo'],
-    [bar, 'bar'],
-  ]}
-/>
-```
-
-```jsx
-<A
-  v-models={[
-    [foo, ['modifier']],
-    [bar, 'bar', ['modifier']],
-  ]}
-/>
-```
-
-会编译成：
-
-```js
-h(A, {
-  modelValue: foo,
-  modelModifiers: {
-    modifier: true,
-  },
-  'onUpdate:modelValue': ($event) => (foo = $event),
-  bar: bar,
-  barModifiers: {
-    modifier: true,
-  },
-  'onUpdate:bar': ($event) => (bar = $event),
-});
-```
-
-#### 自定义指令
-
-只有 argument 的时候推荐使用
-
-```jsx
-const App = {
-  directives: { custom: customDirective },
-  setup() {
-    return () => <a v-custom:arg={val} />;
-  },
-};
-```
-
-```jsx
-const App = {
-  directives: { custom: customDirective },
-  setup() {
-    return () => <a v-custom={[val, 'arg', ['a', 'b']]} />;
-  },
-};
 ```
 
 ### 插槽
@@ -309,62 +284,3 @@ const App = {
   }
 }
 ```
-
-## 谁在使用
-
-<table>
-  <tbody>
-    <tr>
-      <td align="center">
-        <a target="_blank" href="https://www.antdv.com/">
-          <img
-            width="32"
-            src="https://github.com/vuejs/babel-plugin-jsx/assets/6481596/8d604d42-fe5f-4450-af87-97999537cd21"
-          />
-          <br>
-          <strong>Ant Design Vue</strong>
-        </a>
-      </td>
-      <td align="center">
-        <a target="_blank" href="https://youzan.github.io/vant/#/zh-CN/">
-          <img
-            width="32"
-            style="vertical-align: -0.32em; margin-right: 8px;"
-            src="https://img.yzcdn.cn/vant/logo.png"
-          />
-          <br>
-          <strong>Vant</strong>
-        </a>
-      </td>
-      <td align="center">
-        <a target="_blank" href="https://github.com/element-plus/element-plus">
-          <img
-            height="32"
-            style="vertical-align: -0.32em; margin-right: 8px;"
-            src="https://user-images.githubusercontent.com/10731096/91267529-259f3680-e7a6-11ea-9a60-3286f750de01.png"
-          />
-          <br>
-          <strong>Element Plus</strong>
-        </a>
-      </td>
-      <td align="center">
-        <a target="_blank" href="https://github.com/leezng/vue-json-pretty">
-          <img
-            height="32"
-            style="vertical-align: -0.32em; margin-right: 8px;"
-            src="https://raw.githubusercontent.com/leezng/vue-json-pretty/master/static/logo.svg"
-          />
-          <br>
-          <strong>Vue Json Pretty</strong>
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-## 兼容性
-
-要求：
-
-- **Babel 7+**
-- **Vue 3+**

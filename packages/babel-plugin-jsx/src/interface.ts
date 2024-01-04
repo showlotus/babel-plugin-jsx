@@ -37,4 +37,6 @@ export interface VueJSXPluginOptions {
    * If the type is a function, you should be sure to return a different value each time you call it
    */
   customKey?: string | ((...args: any[]) => string);
+  /** */
+  injectKey?: boolean;
 }

@@ -12,6 +12,7 @@ export const compilerOptions: VueJSXPluginOptions = reactive({
   librarySource: 'vue',
   isReactiveRoot: true,
   customKey: 'ONE_JSX_LOADER',
+  injectKey: false,
 });
 
 const App = {
@@ -94,14 +95,22 @@ const App = {
             ),
           ]),
 
+          // inject key
+          h('input', {
+            type: 'checkbox',
+            id: 'injectKey',
+            checked: compilerOptions.injectKey,
+            onChange(e: Event) {
+              compilerOptions.injectKey = (
+                e.target as HTMLInputElement
+              ).checked;
+            },
+          }),
+          h('label', { for: 'injectKey' }, 'injectKey'),
+
           // custom key
-          h('li', [
-            h('input', {
-              type: 'checkbox',
-              disabled: true,
-              checked: true,
-            }),
-            h('label', { for: 'customKey' }, 'customKey：'),
+          compilerOptions.injectKey && h('li', [
+            h('label', { for: 'customKey', style: { marginLeft: '22px' } }, 'customKey：'),
             h('input', {
               type: 'text',
               id: 'customKey',
