@@ -125,20 +125,20 @@ function useFn() {
 
 输出
 
-- 不指定 `customKey`，默认为 `"BABEL_JSX_PLUGIN"`：
+- 不指定 `customKey`，默认为 `"BABEL_PLUGIN_JSX"`：
 
   ```js
   import { Fragment, Select } from '.';
   function useFn() {
     return {
-      key: 'BABEL_JSX_PLUGIN_1',
+      key: 'BABEL_PLUGIN_JSX_1',
       props: {
         title: 'name',
         showOverflow: true,
       },
       slots: {
         default: {
-          key: 'BABEL_JSX_PLUGIN_0',
+          key: 'BABEL_PLUGIN_JSX_0',
           component: Select,
         },
       },
