@@ -13,7 +13,7 @@
     "types": ["vitest/globals"],
     "skipLibCheck": true,
     "paths": {
-      "@vue/babel-plugin-jsx": ["./packages/babel-plugin-jsx/src"]
+      "@showlotus/babel-plugin-jsx": ["./packages/babel-plugin-jsx/src"]
     },
     "noEmit": true
   },

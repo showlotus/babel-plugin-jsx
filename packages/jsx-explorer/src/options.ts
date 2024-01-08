@@ -1,5 +1,5 @@
 import { createApp, h, reactive } from 'vue';
-import { type VueJSXPluginOptions } from '@vue/babel-plugin-jsx';
+import { type VueJSXPluginOptions } from '@showlotus/babel-plugin-jsx';
 
 export { VueJSXPluginOptions };
 

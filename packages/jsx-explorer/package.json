@@ -11,7 +11,7 @@
   "dependencies": {
     "@babel/core": "^7.23.2",
     "@babel/plugin-transform-typescript": "^7.23.6",
-    "@vue/babel-plugin-jsx": "workspace:*",
+    "@showlotus/babel-plugin-jsx": "workspace:*",
     "monaco-editor": "^0.44.0",
     "vue": "^3.3.7"
   },

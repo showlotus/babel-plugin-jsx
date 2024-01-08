@@ -5,7 +5,7 @@ export default defineConfig({
   base: './',
   resolve: {
     alias: {
-      '@vue/babel-plugin-jsx': '@vue/babel-plugin-jsx/src/index.ts',
+      '@showlotus/babel-plugin-jsx': '@showlotus/babel-plugin-jsx/src/index.ts',
     },
   },
   build: {

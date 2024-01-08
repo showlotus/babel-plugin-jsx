@@ -496,7 +496,7 @@ var src_default = ({ types }) => ({
             const { enableObjectSlots = false } = state.opts;
             console.log(enableObjectSlots, "enableObjectSlots");
             if (enableObjectSlots) {
-              state.set("@vue/babel-plugin-jsx/runtimeIsSlot", () => {
+              state.set("@showlotus/babel-plugin-jsx/runtimeIsSlot", () => {
                 if (importMap.runtimeIsSlot) {
                   return importMap.runtimeIsSlot;
                 }
@@ -533,7 +533,7 @@ var src_default = ({ types }) => ({
             const helpers = {};
             const { enableObjectSlots = true } = state.opts;
             if (enableObjectSlots) {
-              state.set("@vue/babel-plugin-jsx/runtimeIsSlot", () => {
+              state.set("@showlotus/babel-plugin-jsx/runtimeIsSlot", () => {
                 if (helpers.runtimeIsSlot) {
                   return helpers.runtimeIsSlot;
                 }

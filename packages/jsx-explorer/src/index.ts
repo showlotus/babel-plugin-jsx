@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor';
 import { watchEffect } from 'vue';
 import { type PluginItem, transform } from '@babel/core';
-import babelPluginJsx from '@vue/babel-plugin-jsx';
+import babelPluginJsx from '@showlotus/babel-plugin-jsx';
 import babelPluginTransformTs from '@babel/plugin-transform-typescript';
 import {
   type VueJSXPluginOptions,
