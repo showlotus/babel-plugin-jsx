@@ -70,7 +70,6 @@ export default ({ types }: typeof BabelCore): BabelCore.PluginObj<State> => ({
                 const identifier = addNamed(path, name, librarySource, {
                   ensureLiveReference: true,
                 });
-                console.log(name, identifier);
                 importMap[name] = identifier;
                 return identifier;
               });
