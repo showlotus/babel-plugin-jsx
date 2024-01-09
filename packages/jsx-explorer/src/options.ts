@@ -1,5 +1,6 @@
 import { createApp, h, reactive } from 'vue';
 import { type VueJSXPluginOptions } from '@showlotus/babel-plugin-jsx';
+import babelPluginJsxPackage from '../../babel-plugin-jsx/package.json';
 
 export { VueJSXPluginOptions };
 
@@ -29,7 +30,7 @@ const App = {
             window.open('https://showlotus.github.io/babel-plugin-jsx/website');
           },
         },
-        'babel-plugin-jsx explorer'
+        `@showlotus/babel-plugin-jsx@${babelPluginJsxPackage.version}`
       ),
 
       h('div', { id: 'options-wrapper' }, [
