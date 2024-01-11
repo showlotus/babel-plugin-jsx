@@ -21,16 +21,14 @@ const App = {
     return () => [
       h(
         'h1',
-        {
-          style: {
-            cursor: 'pointer',
-            userSelect: 'none',
-          },
-          onClick() {
-            window.open('https://showlotus.github.io/babel-plugin-jsx/website');
-          },
-        },
-        `@showlotus/babel-plugin-jsx@${babelPluginJsxPackage.version}`
+        [
+          h('span', '@showlotus/babel-plugin-jsx@'),
+          h('span', babelPluginJsxPackage.version),
+          h('sup', { style: { fontStyle: 'italic' } }, [
+            h('span', ' Forked from '),
+            h('a', { href: "https://github.com/vuejs/babel-plugin-jsx", target: '_blank' }, 'vuejs/babel-plugin-jsx'),
+          ]),
+        ]
       ),
 
       h('div', { id: 'options-wrapper' }, [

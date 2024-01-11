@@ -20,6 +20,40 @@ npm install @showlotus/babel-plugin-jsx
 }
 ```
 
+配置 Webpack
+
+```js
+// webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        
+        test: /\.(jsx|tsx)$/i,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              plugins: [
+                [
+                  '@showlotus/babel-plugin-jsx',
+                  {
+                    isReactiveRoot: true,
+                    librarySource: 'vue',
+                  },
+                ],
+                // 解析 tsx 时，需要额外引入插件 @babel/plugin-transform-typescript
+                ['@babel/plugin-transform-typescript', { isTSX: true, allExtensions: true }],
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
 ## 使用
 
 ### 参数
@@ -160,34 +194,6 @@ function useFn() {
       slots: {
         default: {
           key: 'Only_You_0',
-          component: Select,
-        },
-      },
-    };
-  }
-  ```
-
-- 指定 `customKey` 为一个函数，则需要确保每次调用时，都返回一个唯一的结果，否则可能会导致不同组件有相同的 `key`：
-
-  ```js
-  let count = 1;
-  function customKey() {
-    return `Custom_Key_${count++}`;
-  }
-  ```
-
-  ```js
-  import { Fragment, Select } from '.';
-  function useFn() {
-    return {
-      key: 'Custom_Key_2',
-      props: {
-        title: 'name',
-        showOverflow: true,
-      },
-      slots: {
-        default: {
-          key: 'Custom_Key_1',
           component: Select,
         },
       },
