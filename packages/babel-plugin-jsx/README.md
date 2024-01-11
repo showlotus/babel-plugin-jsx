@@ -28,7 +28,6 @@ module.exports = {
   module: {
     rules: [
       {
-        
         test: /\.(jsx|tsx)$/i,
         use: [
           {
@@ -43,7 +42,10 @@ module.exports = {
                   },
                 ],
                 // 解析 tsx 时，需要额外引入插件 @babel/plugin-transform-typescript
-                ['@babel/plugin-transform-typescript', { isTSX: true, allExtensions: true }],
+                [
+                  '@babel/plugin-transform-typescript',
+                  { isTSX: true, allExtensions: true },
+                ],
               ],
             },
           },
@@ -51,7 +53,7 @@ module.exports = {
       },
     ],
   },
-}
+};
 ```
 
 ## 使用
